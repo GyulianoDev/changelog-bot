@@ -184,29 +184,87 @@ describe('cli-args', () => {
     expect(out.provider).toBe(PROVIDER_XAI);
   });
 
-  test('loads config and overrides with CLI flags', async () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-test-'));
+  test('loads default config file from cwd', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-'));
     try {
       writeFileSync(
         join(cwd, 'changelog-bot.config.json'),
         JSON.stringify({
-          provider: PROVIDER_OPENAI,
-          language: 'ja',
+          provider: PROVIDER_GEMINI,
+          language: 'nl',
+          instructionsFile: '.github/changelog-instructions.md',
+          dryRunJsonReport: true,
+          noAi: true,
+          why: true,
+          whyEngine: 'jev',
+          whyLabel: 'Reason',
+        }),
+        'utf8',
+      );
+
+      const out = await parseCliArgs(['node', 'cli'], { cwd });
+
+      expect(out.provider).toBe(PROVIDER_GEMINI);
+      expect(out.language).toBe('nl');
+      expect(out.instructionsFile).toBe('.github/changelog-instructions.md');
+      expect(out.dryRunJsonReport).toBe(true);
+      expect(out.noAi).toBe(true);
+      expect(out.why).toBe(true);
+      expect(out.whyEngine).toBe('jev');
+      expect(out.whyLabel).toBe('Reason');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  test('loads output: "file" from default config file when no CLI override is provided', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-'));
+    try {
+      writeFileSync(
+        join(cwd, 'changelog-bot.config.json'),
+        JSON.stringify({
           output: 'file',
+        }),
+        'utf8',
+      );
+
+      const out = await parseCliArgs(['node', 'cli'], { cwd });
+
+      expect(out.output).toBe('file');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  test('lets CLI flags override config file values', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-'));
+    try {
+      const configPath = join(cwd, 'custom-config.json');
+      writeFileSync(
+        configPath,
+        JSON.stringify({
+          provider: PROVIDER_GEMINI,
+          language: 'nl',
+          output: 'file',
+          dryRun: true,
           noAi: true,
         }),
+        'utf8',
       );
 
       const out = await parseCliArgs(
         [
           'node',
           'cli',
+          '--config',
+          configPath,
           '--provider',
           PROVIDER_ANTHROPIC,
           '--language',
           'en',
           '--output',
           'stdout',
+          '--no-dry-run',
           '--ai',
         ],
         { cwd },
