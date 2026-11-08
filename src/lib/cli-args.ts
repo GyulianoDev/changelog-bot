@@ -4,6 +4,10 @@ import { z } from 'zod';
 
 import { CliOptionsSchema, type CliOptions } from '@/schema/cli.js';
 import { PROVIDER_NAMES, PROVIDER_OPENAI } from '@/constants/provider.js';
+import {
+  OUTPUT_DESTINATIONS,
+  type OutputDestination,
+} from '@/constants/delivery.js';
 import type { ProviderName } from '@/types/llm.js';
 import { loadCliConfigFile } from '@/lib/config-file.js';
 import { ConfigError } from '@/lib/errors.js';
@@ -51,6 +55,10 @@ export async function parseCliArgs(
     .option('language', { type: 'string' })
     .option('instructions', { type: 'string' })
     .option('instructions-file', { type: 'string' })
+    .option('output', {
+      type: 'string',
+      choices: [...OUTPUT_DESTINATIONS] as unknown as readonly string[],
+    })
     .option('dry-run', { type: 'boolean' })
     .option('dry-run-json-report', { type: 'boolean' })
     .option('fail-on-llm-error', { type: 'boolean' })
@@ -87,6 +95,7 @@ export async function parseCliArgs(
     language: parsed.language,
     instructions: parsed.instructions,
     instructionsFile: parsed['instructions-file'],
+    output: parsed.output as OutputDestination | undefined,
     dryRun: parsed['dry-run'],
     dryRunJsonReport: parsed['dry-run-json-report'],
     failOnLlmError: parsed['fail-on-llm-error'],

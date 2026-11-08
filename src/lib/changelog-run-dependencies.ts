@@ -31,6 +31,11 @@ import { resolveCustomInstructionsWithDiagnostics } from '@/lib/customization.js
 import { buildPrMapBySha, buildTitleToPr } from '@/utils/pr-mapping.js';
 import { runWhyExtraction } from '@/lib/why-extraction.js';
 import { createMetadataDiagnostics } from '@/utils/metadata-diagnostics.js';
+import { deliverChangelog } from '@/lib/delivery.js';
+
+function defaultWriteStdout(content: string): void {
+  process.stdout.write(content.endsWith('\n') ? content : `${content}\n`);
+}
 
 /** Replaceable dependencies for testing changelog orchestration without shell/network I/O. */
 export type ChangelogRunDependencies = {
@@ -88,6 +93,10 @@ export type ChangelogRunDependencies = {
   ensureGithubTokenRequired: typeof ensureGithubTokenRequired;
   /** Commit, push, and create the pull request. */
   createPR: typeof createPR;
+  /** Write payload content directly to standard output. */
+  writeStdout: (content: string) => void;
+  /** Deliver generated changelog to configured destination. */
+  deliverChangelog: typeof deliverChangelog;
 };
 
 const defaultDependencies: ChangelogRunDependencies = {
@@ -118,6 +127,8 @@ const defaultDependencies: ChangelogRunDependencies = {
   writeChangelog,
   ensureGithubTokenRequired,
   createPR,
+  writeStdout: defaultWriteStdout,
+  deliverChangelog,
 };
 
 /**

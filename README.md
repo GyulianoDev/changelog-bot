@@ -60,6 +60,7 @@ Using it in CI? Jump to [GitHub Actions integration](#github-actions-integration
 | `--language`             | Language for generated changelog prose                   | `en`                                   |
 | `--instructions`         | Additional changelog writing/grouping instructions       | unset                                  |
 | `--instructions-file`    | Path to a file with additional instructions              | unset                                  |
+| `--output`               | Delivery destination (`pull-request`, `file`, `stdout`)  | `pull-request`                         |
 | `--dry-run`              | Print updated CHANGELOG to stdout, don’t write file      | `false`                                |
 | `--dry-run-json-report`  | Print dry-run provider diagnostics as JSON               | `false`                                |
 | `--fail-on-llm-error`    | Fail instead of falling back when provider calls fail    | `false`                                |
@@ -550,6 +551,7 @@ precedence are treated as the public compatibility contract.
 | Output language         | `--language`                                         | `language`                 | `language`                 | `language`, default `en`                                    |
 | Extra instructions      | `--instructions`                                     | `instructions`             | `instructions`             | `instructions`, unset                                       |
 | Instructions file       | `--instructions-file`                                | `instructions-file`        | `instructions_file`        | `instructionsFile`, unset                                   |
+| Output destination      | `--output`                                           | `output`                   | `output`                   | `output`, default `pull-request`                            |
 | Preview only            | `--dry-run` / `--no-dry-run`                         | `dry-run`                  | `dry_run`                  | `dryRun`, default `false`                                   |
 | JSON dry-run report     | `--dry-run-json-report` / `--no-dry-run-json-report` | `dry-run-json-report`      | `dry_run_json_report`      | `dryRunJsonReport`, default `false`                         |
 | Fail on provider errors | `--fail-on-llm-error` / `--no-fail-on-llm-error`     | `fail-on-llm-error`        | `fail_on_llm_error`        | `failOnLlmError`, default `false`                           |

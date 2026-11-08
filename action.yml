@@ -39,6 +39,9 @@ inputs:
   instructions-file:
     description: 'Path to a file with additional changelog instructions'
     required: false
+  output:
+    description: 'Changelog delivery destination (pull-request|file|stdout)'
+    required: false
   npm-version:
     description: 'npm dist-tag or version range for @nyaomaru/changelog-bot'
     required: false
@@ -118,6 +121,7 @@ runs:
         INPUT_LANGUAGE: ${{ inputs.language }}
         INPUT_INSTRUCTIONS: ${{ inputs.instructions }}
         INPUT_INSTRUCTIONS_FILE: ${{ inputs['instructions-file'] }}
+        INPUT_OUTPUT: ${{ inputs.output }}
         INPUT_MINIMUM_PACKAGE_AGE_DAYS: ${{ inputs['minimum-package-age-days'] }}
         INPUT_DRY_RUN: ${{ inputs['dry-run'] }}
         INPUT_DRY_RUN_JSON_REPORT: ${{ inputs['dry-run-json-report'] }}
@@ -180,6 +184,9 @@ runs:
         fi
         if [ -n "${INPUT_INSTRUCTIONS_FILE:-}" ]; then
           CMD+=(--instructions-file "${INPUT_INSTRUCTIONS_FILE}")
+        fi
+        if [ -n "${INPUT_OUTPUT:-}" ]; then
+          CMD+=(--output "${INPUT_OUTPUT}")
         fi
         if [ "${INPUT_DRY_RUN:-}" = "true" ]; then
           CMD+=(--dry-run)

@@ -5,6 +5,10 @@ import {
 } from '@/constants/git.js';
 import { PROVIDER_NAMES } from '@/constants/provider.js';
 import {
+  DEFAULT_OUTPUT_DESTINATION,
+  OUTPUT_DESTINATIONS,
+} from '@/constants/delivery.js';
+import {
   DEFAULT_WHY_CONFIDENCE,
   DEFAULT_WHY_LABEL,
   DEFAULT_WHY_MAX_CHARS_PER_PR,
@@ -27,6 +31,7 @@ export const CliOptionsSchema = z
     language: z.string().min(1).default('en'),
     instructions: z.string().optional(),
     instructionsFile: z.string().optional(),
+    output: z.enum(OUTPUT_DESTINATIONS).default(DEFAULT_OUTPUT_DESTINATION),
     dryRun: z.boolean().default(false),
     dryRunJsonReport: z.boolean().default(false),
     failOnLlmError: z.boolean().default(false),
@@ -51,6 +56,16 @@ export const CliOptionsSchema = z
         code: z.ZodIssueCode.custom,
         path: ['noAi'],
         message: '--no-ai cannot be combined with --require-provider',
+      });
+    }
+    if (
+      (options.dryRun || options.dryRunJsonReport) &&
+      options.output !== 'pull-request'
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['dryRun'],
+        message: `--dry-run cannot be combined with --output ${options.output}`,
       });
     }
   });

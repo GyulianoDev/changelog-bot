@@ -2,11 +2,10 @@
 
 ## Status
 
-Phases 1-6 are implemented. They establish canonical `ReleaseChange`
+Phases 1-7 are implemented. They establish canonical `ReleaseChange`
 identities, ID-based reconciliation, deterministic classification, structural
 rendering, completeness validation, explicit no-change behavior, enrichment
-diagnostics, and bounded concurrency. Phase 7 remains planned implementation
-work for v1.
+diagnostics, bounded concurrency, and output destination separation (pull-request, file, stdout).
 
 Each numbered phase should remain a separately reviewable change and preserve
 existing output unless its acceptance criteria explicitly change behavior.
@@ -357,7 +356,7 @@ Acceptance criteria:
 - Dry-run diagnostics summarize degraded metadata and enrichment.
 - Concurrency is bounded and covered by tests.
 
-### 7. Separate output destinations
+### 7. Separate output destinations (implemented)
 
 Model generation independently from delivery so the same validated
 `ReleaseResult` and rendered content can be printed, written to a file, or
