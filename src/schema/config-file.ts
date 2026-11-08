@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PROVIDER_NAMES } from '@/constants/provider.js';
+import { OUTPUT_DESTINATIONS } from '@/constants/delivery.js';
 
 /**
  * Runtime validation for optional JSON config files.
@@ -43,6 +44,10 @@ export const CliConfigFileSchema = z
       .string()
       .optional()
       .describe('Path to a file with additional instructions.'),
+    output: z
+      .enum(OUTPUT_DESTINATIONS)
+      .optional()
+      .describe('Changelog delivery destination (pull-request|file|stdout).'),
     dryRun: z
       .boolean()
       .optional()

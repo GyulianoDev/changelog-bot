@@ -3,6 +3,7 @@ import {
   PR_BRANCH_PREFIX,
   PR_TITLE_PREFIX,
 } from '@/constants/changelog.js';
+import { DEFAULT_OUTPUT_DESTINATION } from '@/constants/delivery.js';
 import type { AppConfig } from '@/types/config.js';
 import type { CliOptions } from '@/schema/cli.js';
 import {
@@ -32,7 +33,9 @@ export async function executeChangelogRun(params: {
   log?: ChangelogRunLogger;
   deps?: Partial<ChangelogRunDependencies>;
 }): Promise<void> {
-  const { cli, appConfig, log = console.log } = params;
+  const destination = params.cli.output ?? DEFAULT_OUTPUT_DESTINATION;
+  const defaultLog = destination === 'stdout' ? console.error : console.log;
+  const { cli, appConfig, log = defaultLog } = params;
   const deps = resolveChangelogRunDependencies(params.deps);
   const {
     provider,
@@ -130,28 +133,32 @@ export async function executeChangelogRun(params: {
     return;
   }
 
-  if (llmOutput.outcome?.kind === 'no-changes') {
-    log(`No changes found for release v${version}; skipping PR creation.`);
-    return;
-  }
-
-  deps.ensureGithubTokenRequired(cli.dryRun, token);
-  const ghToken = token as string;
-
-  deps.writeChangelog(changelogPath, updatedChangelog);
-
   const branch = `${PR_BRANCH_PREFIX}${version}`;
-  const prNum = await deps.createPR({
-    owner,
-    repo,
-    baseBranch: cli.baseBranch,
-    branchName: branch,
-    title: llm.pr_title || `${PR_TITLE_PREFIX}${version}`,
-    body: llm.pr_body || '',
-    labels: llm.labels ?? [...DEFAULT_PR_LABELS],
-    token: ghToken,
-    changelogEntry: cli.changelogPath,
-  });
-
-  log(`Created PR #${prNum}`);
+  await deps.deliverChangelog(
+    {
+      destination,
+      releaseSectionMarkdown: finalizedOutput.llm.new_section_markdown,
+      updatedChangelog,
+      changelogPath,
+      version,
+      token,
+      deliveryMetadata: {
+        owner,
+        repo,
+        baseBranch: cli.baseBranch,
+        branchName: branch,
+        title: llm.pr_title || `${PR_TITLE_PREFIX}${version}`,
+        body: llm.pr_body || '',
+        labels: llm.labels ?? [...DEFAULT_PR_LABELS],
+      },
+      outcome: llmOutput.outcome,
+    },
+    {
+      ensureGithubTokenRequired: deps.ensureGithubTokenRequired,
+      writeChangelog: deps.writeChangelog,
+      createPR: deps.createPR,
+      writeStdout: deps.writeStdout,
+      log,
+    },
+  );
 }

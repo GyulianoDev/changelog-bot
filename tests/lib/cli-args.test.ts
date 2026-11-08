@@ -38,6 +38,7 @@ describe('cli-args', () => {
     expect(out.language).toBe('en');
     expect(out.instructions).toBeUndefined();
     expect(out.instructionsFile).toBeUndefined();
+    expect(out.output).toBe('pull-request');
     expect(out.dryRun).toBe(false);
     expect(out.dryRunJsonReport).toBe(false);
     expect(out.failOnLlmError).toBe(false);
@@ -75,6 +76,8 @@ describe('cli-args', () => {
       'Use concise bullets.',
       '--instructions-file',
       '.github/changelog-instructions.md',
+      '--output',
+      'pull-request',
       '--dry-run',
       '--dry-run-json-report',
       '--fail-on-llm-error',
@@ -103,6 +106,7 @@ describe('cli-args', () => {
     expect(out.language).toBe('ja');
     expect(out.instructions).toBe('Use concise bullets.');
     expect(out.instructionsFile).toBe('.github/changelog-instructions.md');
+    expect(out.output).toBe('pull-request');
     expect(out.dryRun).toBe(true);
     expect(out.dryRunJsonReport).toBe(true);
     expect(out.failOnLlmError).toBe(true);
@@ -115,6 +119,47 @@ describe('cli-args', () => {
     expect(out.whyConfidence).toBe('high');
     expect(out.whyLabel).toBe('Reason');
   });
+
+  test.each(['file', 'stdout', 'pull-request'])(
+    'parses explicit --output %s destination',
+    async (destination) => {
+      const out = await parseCliArgs(['node', 'cli', '--output', destination]);
+
+      expect(out.output).toBe(destination);
+    },
+  );
+
+  test.each(['file', 'stdout'])(
+    'rejects --dry-run combined with --output %s',
+    async (destination) => {
+      await expect(
+        parseCliArgs(['node', 'cli', '--output', destination, '--dry-run']),
+      ).rejects.toThrow(
+        `--dry-run cannot be combined with --output ${destination}`,
+      );
+
+      await expect(
+        parseCliArgs(['node', 'cli', '--output', destination, '--dry-run']),
+      ).rejects.toBeInstanceOf(ConfigError);
+    },
+  );
+
+  test.each(['file', 'stdout'])(
+    'rejects --dry-run-json-report combined with --output %s',
+    async (destination) => {
+      await expect(
+        parseCliArgs([
+          'node',
+          'cli',
+          '--output',
+          destination,
+          '--dry-run-json-report',
+        ]),
+      ).rejects.toThrow(
+        `--dry-run cannot be combined with --output ${destination}`,
+      );
+    },
+  );
 
   test('parses --no-ai as deterministic mode', async () => {
     const out = await parseCliArgs(['node', 'cli', '--no-ai']);
@@ -139,65 +184,29 @@ describe('cli-args', () => {
     expect(out.provider).toBe(PROVIDER_XAI);
   });
 
-  test('loads default config file from cwd', async () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-'));
+  test('loads config and overrides with CLI flags', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-test-'));
     try {
       writeFileSync(
         join(cwd, 'changelog-bot.config.json'),
         JSON.stringify({
-          provider: PROVIDER_GEMINI,
-          language: 'nl',
-          instructionsFile: '.github/changelog-instructions.md',
-          dryRunJsonReport: true,
-          noAi: true,
-          why: true,
-          whyEngine: 'jev',
-          whyLabel: 'Reason',
-        }),
-        'utf8',
-      );
-
-      const out = await parseCliArgs(['node', 'cli'], { cwd });
-
-      expect(out.provider).toBe(PROVIDER_GEMINI);
-      expect(out.language).toBe('nl');
-      expect(out.instructionsFile).toBe('.github/changelog-instructions.md');
-      expect(out.dryRunJsonReport).toBe(true);
-      expect(out.noAi).toBe(true);
-      expect(out.why).toBe(true);
-      expect(out.whyEngine).toBe('jev');
-      expect(out.whyLabel).toBe('Reason');
-    } finally {
-      rmSync(cwd, { recursive: true, force: true });
-    }
-  });
-
-  test('lets CLI flags override config file values', async () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'changelog-bot-'));
-    try {
-      const configPath = join(cwd, 'custom-config.json');
-      writeFileSync(
-        configPath,
-        JSON.stringify({
-          provider: PROVIDER_GEMINI,
-          language: 'nl',
-          dryRun: true,
+          provider: PROVIDER_OPENAI,
+          language: 'ja',
+          output: 'file',
           noAi: true,
         }),
-        'utf8',
       );
 
       const out = await parseCliArgs(
         [
           'node',
           'cli',
-          '--config',
-          configPath,
           '--provider',
           PROVIDER_ANTHROPIC,
           '--language',
           'en',
-          '--no-dry-run',
+          '--output',
+          'stdout',
           '--ai',
         ],
         { cwd },
@@ -205,6 +214,7 @@ describe('cli-args', () => {
 
       expect(out.provider).toBe(PROVIDER_ANTHROPIC);
       expect(out.language).toBe('en');
+      expect(out.output).toBe('stdout');
       expect(out.dryRun).toBe(false);
       expect(out.noAi).toBe(false);
     } finally {
@@ -235,6 +245,7 @@ describe('cli-args', () => {
   test.each([
     ['unknown flag', ['node', 'cli', '--unknown-flag']],
     ['invalid provider choice', ['node', 'cli', '--provider', 'bogus']],
+    ['invalid output choice', ['node', 'cli', '--output', 'bogus']],
   ])('maps yargs %s failures to usage exit code', async (_, argv) => {
     try {
       await parseCliArgs(argv);

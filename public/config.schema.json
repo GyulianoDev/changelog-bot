@@ -48,6 +48,11 @@
       "description": "Path to a file with additional instructions.",
       "type": "string"
     },
+    "output": {
+      "description": "Changelog delivery destination (pull-request|file|stdout).",
+      "type": "string",
+      "enum": ["pull-request", "file", "stdout"]
+    },
     "dryRun": {
       "description": "Print the updated CHANGELOG to stdout instead of writing it.",
       "type": "boolean"

@@ -35,6 +35,9 @@ on:
       instructions_file:
         required: false
         type: string
+      output:
+        required: false
+        type: string
       npm_version:
         required: false
         type: string
@@ -139,6 +142,7 @@ jobs:
           language: ${{ inputs.language }}
           instructions: ${{ inputs.instructions }}
           instructions-file: ${{ inputs.instructions_file }}
+          output: ${{ inputs.output }}
           npm-version: ${{ inputs.npm_version }}
           minimum-package-age-days: ${{ inputs.minimum_package_age_days }}
           dry-run: ${{ inputs.dry_run }}

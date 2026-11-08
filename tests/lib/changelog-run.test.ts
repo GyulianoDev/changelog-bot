@@ -24,6 +24,7 @@ const cli: CliOptions = {
   language: 'ja',
   instructions: 'Use concise bullets.',
   instructionsFile: '.github/changelog-instructions.md',
+  output: 'pull-request',
   dryRun: true,
   dryRunJsonReport: false,
   failOnLlmError: false,
@@ -938,5 +939,186 @@ describe('executeChangelogRun', () => {
     expect(parsed.metadata.degradedLookups).toBe(0);
     expect(parsed.metadata.failureCounts['not-found']).toBe(0);
     expect(parsed.metadata.fallbackReasons).toEqual([]);
+  });
+  test('delivers file destination by updating changelog file without creating PR', async () => {
+    const log = jest.fn<(message: string) => void>();
+    const deps: Partial<ChangelogRunDependencies> = {
+      providerFactory: jest.fn(() => provider),
+      getRepoFullName: jest.fn(() => 'octo/repo'),
+      resolveReleasePlan: jest.fn(() => ({
+        owner: 'octo',
+        repo: 'repo',
+        repoPath: '.',
+        changelogPath: 'CHANGELOG.md',
+        releaseRef: 'v1.2.3',
+        version: '1.2.3',
+        prevRef: 'v1.2.2',
+        date: '2026-06-20',
+      })),
+      gitMergedPRs: jest.fn(() => ''),
+      commitsInRange: jest.fn(() => [
+        { sha: 'abcdef1', subject: 'feat: new feature' },
+      ]),
+      currentBranch: jest.fn(() => 'main'),
+      prepareExistingChangelog: jest.fn(() => '# Changelog'),
+      resolveRunCredentials: jest.fn(async () => ({
+        token: undefined,
+        hasProviderKey: false,
+      })),
+      fetchPullRequestsForBranch: jest.fn(async () => []),
+      mapCommitsToPrs: jest.fn(async () => ({})),
+      fetchReleaseBody: jest.fn(async () => ''),
+      resolveCustomInstructionsWithDiagnostics: jest.fn(
+        () => unresolvedCustomization,
+      ),
+      buildPrMapBySha: jest.fn(() => ({})),
+      buildTitleToPr: jest.fn(() => ({})),
+      getProviderRuntimeConfig: jest.fn(() => appConfig.providers.openai),
+      buildChangelogLlmOutput: jest.fn(async () => ({
+        llm: createLlmOutput(),
+        aiUsed: false,
+        fallbackReasons: [],
+        outcome: {
+          kind: 'release',
+          result: {
+            version: '1.2.3',
+            date: '2026-06-20',
+            changes: [],
+            assignments: {},
+            excludedChanges: [],
+            sourceChanges: [],
+          },
+        },
+      })),
+      finalizeChangelogUpdate: jest.fn((params) => ({
+        llm: params.llm,
+        updated: '# Changelog\n\n## 1.2.3\n- feat: new feature',
+      })),
+      runWhyExtraction: jest.fn(async (params) => ({
+        llm: params.llm,
+        diagnostics: {
+          enabled: false,
+          engine: 'llm',
+          selectionDiagnostics: [],
+          aiUsed: false,
+          targetsFound: 0,
+          prBodiesFetched: 0,
+          skippedBeforeFetch: 0,
+          skippedLowTrust: 0,
+          notesRendered: 0,
+          fallbackReasons: [],
+        },
+      })),
+      writeChangelog: jest.fn(),
+      ensureGithubTokenRequired: jest.fn(),
+      createPR: jest.fn(async () => 1),
+    };
+
+    await executeChangelogRun({
+      cli: { ...cli, dryRun: false, output: 'file' },
+      appConfig,
+      log,
+      deps,
+    });
+
+    expect(deps.ensureGithubTokenRequired).not.toHaveBeenCalled();
+    expect(deps.writeChangelog).toHaveBeenCalledWith(
+      'CHANGELOG.md',
+      '# Changelog\n\n## 1.2.3\n- feat: new feature',
+    );
+    expect(deps.createPR).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('Updated CHANGELOG.md for release v1.2.3');
+  });
+
+  test('delivers stdout destination by writing section markdown without file or git mutations', async () => {
+    const log = jest.fn<(message: string) => void>();
+    const writeStdout = jest.fn();
+    const deps: Partial<ChangelogRunDependencies> = {
+      providerFactory: jest.fn(() => provider),
+      getRepoFullName: jest.fn(() => 'octo/repo'),
+      resolveReleasePlan: jest.fn(() => ({
+        owner: 'octo',
+        repo: 'repo',
+        repoPath: '.',
+        changelogPath: 'CHANGELOG.md',
+        releaseRef: 'v1.2.3',
+        version: '1.2.3',
+        prevRef: 'v1.2.2',
+        date: '2026-06-20',
+      })),
+      gitMergedPRs: jest.fn(() => ''),
+      commitsInRange: jest.fn(() => [
+        { sha: 'abcdef1', subject: 'feat: new feature' },
+      ]),
+      currentBranch: jest.fn(() => 'main'),
+      prepareExistingChangelog: jest.fn(() => '# Changelog'),
+      resolveRunCredentials: jest.fn(async () => ({
+        token: undefined,
+        hasProviderKey: false,
+      })),
+      fetchPullRequestsForBranch: jest.fn(async () => []),
+      mapCommitsToPrs: jest.fn(async () => ({})),
+      fetchReleaseBody: jest.fn(async () => ''),
+      resolveCustomInstructionsWithDiagnostics: jest.fn(
+        () => unresolvedCustomization,
+      ),
+      buildPrMapBySha: jest.fn(() => ({})),
+      buildTitleToPr: jest.fn(() => ({})),
+      getProviderRuntimeConfig: jest.fn(() => appConfig.providers.openai),
+      buildChangelogLlmOutput: jest.fn(async () => ({
+        llm: createLlmOutput({
+          new_section_markdown: '## 1.2.3\n- feat: new feature',
+        }),
+        aiUsed: false,
+        fallbackReasons: [],
+        outcome: {
+          kind: 'release',
+          result: {
+            version: '1.2.3',
+            date: '2026-06-20',
+            changes: [],
+            assignments: {},
+            excludedChanges: [],
+            sourceChanges: [],
+          },
+        },
+      })),
+      finalizeChangelogUpdate: jest.fn((params) => ({
+        llm: params.llm,
+        updated: '# Changelog\n\n## 1.2.3\n- feat: new feature',
+      })),
+      runWhyExtraction: jest.fn(async (params) => ({
+        llm: params.llm,
+        diagnostics: {
+          enabled: false,
+          engine: 'llm',
+          selectionDiagnostics: [],
+          aiUsed: false,
+          targetsFound: 0,
+          prBodiesFetched: 0,
+          skippedBeforeFetch: 0,
+          skippedLowTrust: 0,
+          notesRendered: 0,
+          fallbackReasons: [],
+        },
+      })),
+      writeChangelog: jest.fn(),
+      ensureGithubTokenRequired: jest.fn(),
+      createPR: jest.fn(async () => 1),
+      writeStdout,
+    };
+
+    await executeChangelogRun({
+      cli: { ...cli, dryRun: false, output: 'stdout' },
+      appConfig,
+      log,
+      deps,
+    });
+
+    expect(deps.ensureGithubTokenRequired).not.toHaveBeenCalled();
+    expect(deps.writeChangelog).not.toHaveBeenCalled();
+    expect(deps.createPR).not.toHaveBeenCalled();
+    expect(writeStdout).toHaveBeenCalledWith('## 1.2.3\n- feat: new feature');
+    expect(log).not.toHaveBeenCalled();
   });
 });
