@@ -62,10 +62,13 @@ export const CliOptionsSchema = z
       (options.dryRun || options.dryRunJsonReport) &&
       options.output !== 'pull-request'
     ) {
+      const conflictingOption = options.dryRun
+        ? '--dry-run'
+        : '--dry-run-json-report';
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['dryRun'],
-        message: `--dry-run cannot be combined with --output ${options.output}`,
+        message: `${conflictingOption} cannot be combined with --output ${options.output}`,
       });
     }
   });

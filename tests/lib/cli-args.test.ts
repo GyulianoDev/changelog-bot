@@ -147,17 +147,19 @@ describe('cli-args', () => {
   test.each(['file', 'stdout'])(
     'rejects --dry-run-json-report combined with --output %s',
     async (destination) => {
-      await expect(
-        parseCliArgs([
-          'node',
-          'cli',
-          '--output',
-          destination,
-          '--dry-run-json-report',
-        ]),
-      ).rejects.toThrow(
-        `--dry-run cannot be combined with --output ${destination}`,
+      const result = parseCliArgs([
+        'node',
+        'cli',
+        '--output',
+        destination,
+        '--dry-run-json-report',
+      ]);
+
+      await expect(result).rejects.toThrow(
+        `--dry-run-json-report cannot be combined with --output ${destination}`,
       );
+      await expect(result).rejects.toBeInstanceOf(ConfigError);
+      await expect(result).rejects.toHaveProperty('exitCode', EXIT_USAGE);
     },
   );
 
