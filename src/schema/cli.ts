@@ -67,7 +67,7 @@ export const CliOptionsSchema = z
         : '--dry-run-json-report';
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['dryRun'],
+        path: [options.dryRun ? 'dryRun' : 'dryRunJsonReport'],
         message: `${conflictingOption} cannot be combined with --output ${options.output}`,
       });
     }

@@ -141,6 +141,10 @@ describe('cli-args', () => {
       await expect(
         parseCliArgs(['node', 'cli', '--output', destination, '--dry-run']),
       ).rejects.toBeInstanceOf(ConfigError);
+
+      await expect(
+        parseCliArgs(['node', 'cli', '--output', destination, '--dry-run']),
+      ).rejects.toThrow(/→ at dryRun$/);
     },
   );
 
@@ -158,6 +162,7 @@ describe('cli-args', () => {
       await expect(result).rejects.toThrow(
         `--dry-run-json-report cannot be combined with --output ${destination}`,
       );
+      await expect(result).rejects.toThrow(/→ at dryRunJsonReport$/);
       await expect(result).rejects.toBeInstanceOf(ConfigError);
       await expect(result).rejects.toHaveProperty('exitCode', EXIT_USAGE);
     },
